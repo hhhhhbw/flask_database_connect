@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import class_mapper
+
 
 # 创建 Flask 应用实例
 app = Flask(__name__)
@@ -33,18 +34,20 @@ def object_as_dict(obj):
     return {column.key: getattr(obj, column.key)
             for column in class_mapper(obj.__class__).columns}
 
-# 举例功能：查询 2014 年的数据
-def query_data_2014():
-    data_2014 = S1Description.query.filter(S1Description.Time == '2014').all()
-    result = [object_as_dict(row) for row in data_2014]
-    return result
+# 定义查询接口，通过 biovar 类型进行查询
+@app.route('/query', methods=['GET'])
+def query_data_by_biovar():
+    biovar = request.args.get('biovar')
+    data = S1Description.query.filter(S1Description.Biovar == biovar).all()
+    result = [object_as_dict(row) for row in data]
+    # 只返回需要的字段
+    return jsonify([{'total_sample_size': row['total_sample_size'],
+                     'positive_sample_size': row['positive_sample_size'],
+                     'positive_rate': row['positive_rate']} for row in result])
 
 # 主程序入口
 if __name__ == '__main__':
     # 使用应用上下文，确保正确执行查询
     with app.app_context():
-        # 获取 2014 年数据的完整信息
-        data_2014_full_info = query_data_2014()
-        # 按行打印结果
-        for row in data_2014_full_info:
-            print(row)
+        # 启动 Flask 服务器
+        app.run(debug=True)
