@@ -1,8 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import class_mapper
-from collections import OrderedDict
-
+from sqlalchemy import func
 
 # 创建 Flask 应用实例
 app = Flask(__name__)
@@ -29,36 +28,6 @@ class S1Description(db.Model):
 
     def __repr__(self):
         return f'<S1Description {self.id}>'
-class Description(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    country = db.Column(db.String(255), nullable=True)
-    total_sample_size_sum = db.Column(db.Integer, nullable=True)
-    positive_sample_size_sum = db.Column(db.Integer, nullable=True)
-    positive_rate = db.Column(db.Float, nullable=True)
-
-    def __repr__(self):
-        return f'<Description {self.id}>'
-class D1(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    country = db.Column(db.String(255), nullable=True)
-    Total_sample_size = db.Column(db.Integer, nullable=True)
-
-    def __repr__(self):
-        return f'<D1 {self.id}>'
-class D2(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    country = db.Column(db.String(255), nullable=True)
-    Positive_sample_size = db.Column(db.Integer, nullable=True)
-
-    def __repr__(self):
-        return f'<D2 {self.id}>'
-class D3(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    country = db.Column(db.String(255), nullable=True)
-    Positive_rate = db.Column(db.Integer, nullable=True)
-
-    def __repr__(self):
-        return f'<D3 {self.id}>'
 # 将 ORM 对象转换为字典
 def object_as_dict(obj):
     return {column.key: getattr(obj, column.key)
@@ -74,34 +43,116 @@ def query_data_by_biovar():
     return jsonify([{'total_sample_size': row['total_sample_size'],
                      'positive_sample_size': row['positive_sample_size'],
                      'positive_rate': row['positive_rate']} for row in result])
+
 @app.route('/Total_sample_size', methods=['GET'])
 def get_Total_sample_size_data():
-    data = D1.query.all()
-    result = [object_as_dict(row) for row in data]
-    return jsonify(data=[{'name': row['country'],
-                          'value': row['Total_sample_size']} for row in result])
+    data = (
+        db.session.query(
+            func.trim(S1Description.Country).label('country'),
+            S1Description.total_sample_size.label('Total_sample_size')
+        )
+        .filter(S1Description.Country != "")
+        .filter(S1Description.total_sample_size != None)
+        .all()
+    )
+    result = [
+        {
+            'name': row.country,
+            'value': row.Total_sample_size
+        } for row in data
+    ]
+
+    return jsonify(data=result)
 @app.route('/Positive_sample_size', methods=['GET'])
 def get_Positive_sample_size_data():
-    data = D2.query.all()
-    result = [object_as_dict(row) for row in data]
-    return jsonify(data=[{'name': row['country'],
-                          'value': row['Positive_sample_size']} for row in result])
-
+    data = (
+        db.session.query(
+            func.trim(S1Description.Country).label('country'),
+            S1Description.positive_sample_size.label('Positive_sample_size')
+        )
+        .filter(S1Description.Country != "")
+        .filter(S1Description.positive_sample_size != None)
+        .all()
+    )
+    result = [
+        {
+            'name': row.country,
+            'value': row.Positive_sample_size
+        } for row in data
+    ]
+    return jsonify(data=result)
 @app.route('/Positive_rate', methods=['GET'])
 def get_Positive_rate_data():
-    data = D3.query.all()
-    result = [object_as_dict(row) for row in data]
-    return jsonify(data=[{'name': row['country'],
-                          'value': row['Positive_rate']} for row in result])
+    data = (
+        db.session.query(
+            func.trim(S1Description.Country).label('country'),
+            # 保留两位小数，四舍五入
+            func.round(S1Description.positive_rate, 2).label('Positive_rate')
+        )
+        .filter(S1Description.Country != "")
+        .filter(S1Description.positive_rate != None)
+        .all()
+    )
+    result = [
+        {
+            'name': row.country,
+            'value': row.Positive_rate
+        } for row in data
+    ]
+    return jsonify(data=result)
+
+
 @app.route('/description', methods=['GET'])
 def get_description_data():
-    data = Description.query.all()
-    result = [object_as_dict(row) for row in data]
-    return jsonify(data=[{'name': row['country'],
-                          'Total_sample_size': row['total_sample_size_sum'],
-                          'Positive_sample_size': row['positive_sample_size_sum'],
-                          'Positive_rate': row['positive_rate']
-                          } for row in result])
+    data = (
+        db.session.query(
+            func.trim(S1Description.Country).label('country'),
+            func.sum(S1Description.total_sample_size).label('Total_sample_size_sum'),
+            func.sum(S1Description.positive_sample_size).label('Positive_sample_size_sum'),
+            func.round(func.sum(S1Description.positive_sample_size) / func.sum(S1Description.total_sample_size) * 100, 2).label('positive_rate')
+        )
+        .filter(S1Description.Country != "")
+        .filter(S1Description.total_sample_size != None)
+        .filter(S1Description.positive_sample_size != None)
+        .group_by(func.trim(S1Description.Country))
+        .order_by(func.trim(S1Description.Country))
+        .all()
+    )
+    result = [
+        {
+            'name': row.country,
+            'Total_sample_size': row.Total_sample_size_sum,
+            'Positive_sample_size': row.Positive_sample_size_sum,
+            'Positive_rate': row.positive_rate
+        } for row in data
+    ]
+    return jsonify(data=result)
+
+@app.route('/biovar_country_stats', methods=['GET'])
+def get_biovar_country_stats():
+    biovar = request.args.get('biovar')
+    if biovar not in ['bvSP', 'bvSG', 'unclear']:
+        return jsonify({"error": "Invalid biovar value"}), 400
+    data = (
+        db.session.query(
+            S1Description.Country,
+            func.sum(S1Description.total_sample_size).label("total_sample_size"),
+            func.sum(S1Description.positive_sample_size).label("positive_sample_size"),
+        )
+        .filter(S1Description.Biovar == biovar)
+        .group_by(S1Description.Country)
+        .all()
+    )
+    result = [
+        {
+            "name": row.Country,
+            "total_sample_size": row.total_sample_size,
+            "positive_sample_size": row.positive_sample_size,
+            "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
+        }
+        for row in data
+    ]
+    return jsonify(result)
 
 # 主程序入口
 if __name__ == '__main__':
