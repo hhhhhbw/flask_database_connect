@@ -12,6 +12,53 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # 初始化 SQLAlchemy
 db = SQLAlchemy(app)
 
+provinces = {
+    "Anhui": "安徽",
+    "Fujian": "福建",
+    "Gansu": "甘肃",
+    "Guangdong": "广东",
+    "Guizhou": "贵州",
+    "Hainan": "海南",
+    "Hebei": "河北",
+    "Heilongjiang": "黑龙江",
+    "Henan": "河南",
+    "Hennan": "河南",
+    "Hubei": "湖北",
+    "Hunan": "湖南",
+    "Jiangsu": "江苏",
+    "Jiangxi": "江西",
+    "Jilin": "吉林",
+    "Liaoning": "辽宁",
+    "Qinghai": "青海",
+    "Shaanxi": "陕西",
+    "Shanxi": "山西",
+    "Shandong": "山东",
+    "Sichuan": "四川",
+    "Yunnan": "云南",
+    "Zhejiang": "浙江",
+    "Guangxi": "广西",
+    "Inner Mongolia": "内蒙古",
+    "Ningxia": "宁夏",
+    "Xinjiang": "新疆",
+    "Tibet": "西藏",
+    "Beijing": "北京",
+    "Tianjin": "天津",
+    "Shanghai": "上海",
+    "Chongqing": "重庆",
+    "Hong Kong": "香港",
+    "Macau": "澳门",
+    "Taiwan": "台湾",
+}
+# 将英文名称转换为中文名称
+def translate_province_name(input_string):
+    # 分割输入字符串
+    province_names = input_string.split(", ")
+    # 将英文名称转换为中文名称
+    chinese_names = [provinces[name] for name in province_names]
+    # 将结果合并为一个字符串
+    result = ",".join(chinese_names)
+    return result
+
 # 定义 S1Description 数据表模型
 class S1Description(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -127,6 +174,34 @@ def get_description_data():
         } for row in data
     ]
     return jsonify(data=result)
+@app.route('/description_province', methods=['GET'])
+def get_description_province_data():
+    data = (
+        db.session.query(
+            func.trim(S1Description.Province).label('province'),
+            func.sum(S1Description.total_sample_size).label('Total_sample_size_sum'),
+            func.sum(S1Description.positive_sample_size).label('Positive_sample_size_sum'),
+            func.round(func.sum(S1Description.positive_sample_size) / func.sum(S1Description.total_sample_size) * 100, 2).label('positive_rate')
+        )
+        .filter(S1Description.Country == 'China')
+        .filter(S1Description.Province != 'NA')
+        .group_by(func.trim(S1Description.Province))
+        .order_by(func.trim(S1Description.Province))
+        .all()
+    )
+    result = [
+        {
+            'name': translate_province_name(row.province),
+            'Total_sample_size': row.Total_sample_size_sum,
+            'Positive_sample_size': row.Positive_sample_size_sum,
+            'Positive_rate': row.positive_rate
+        } for row in data
+    ]
+    return app.response_class(
+        response=json.dumps(result, ensure_ascii=False),
+        status=200,
+        mimetype='application/json'
+    )
 
 @app.route('/biovar_country_stats', methods=['GET'])
 def get_biovar_country_stats():
@@ -153,6 +228,40 @@ def get_biovar_country_stats():
         for row in data
     ]
     return jsonify(result)
+from flask import json
+
+@app.route('/biovar_province_stats', methods=['GET'])
+def get_biovar_province_stats():
+    biovar = request.args.get('biovar')
+    if biovar not in ['bvSP', 'bvSG', 'unclear']:
+        return jsonify({"error": "Invalid biovar value"}), 400
+    data = (
+        db.session.query(
+            S1Description.Province,
+            func.sum(S1Description.total_sample_size).label("total_sample_size"),
+            func.sum(S1Description.positive_sample_size).label("positive_sample_size"),
+        )
+        .filter(S1Description.Biovar == biovar)
+        .filter(S1Description.Country == 'China')
+        .filter(S1Description.Province != 'NA')
+        .group_by(S1Description.Province)
+        .all()
+    )
+    result = [
+        {
+            "name": translate_province_name(row.Province),
+            "total_sample_size": row.total_sample_size,
+            "positive_sample_size": row.positive_sample_size,
+            "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
+        }
+        for row in data
+    ]
+    return app.response_class(
+        response=json.dumps(result, ensure_ascii=False),
+        status=200,
+        mimetype='application/json'
+    )
+
 
 # 主程序入口
 if __name__ == '__main__':
