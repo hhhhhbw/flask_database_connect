@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import class_mapper
 from sqlalchemy import func
+from flask_cors import CORS
 
 # 创建 Flask 应用实例
 app = Flask(__name__)
@@ -11,7 +12,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # 初始化 SQLAlchemy
 db = SQLAlchemy(app)
-
+CORS(app,resources=r'/*')
 
 # 定义数据表模型
 class S1Description(db.Model):
@@ -198,9 +199,9 @@ def get_description_data():
     result = [
         {
             'name': row.country,
-            'Total_sample_size': row.Total_sample_size_sum,
-            'Positive_sample_size': row.Positive_sample_size_sum,
-            'Positive_rate': row.positive_rate
+            'total_sample_size': row.Total_sample_size_sum,
+            'positive_sample_size': row.Positive_sample_size_sum,
+            'positive_rate': row.positive_rate
         } for row in data
     ]
     return jsonify(data=result)
@@ -222,9 +223,9 @@ def get_description_province_data():
     result = [
         {
             'name': row.province,
-            'Total_sample_size': row.Total_sample_size_sum,
-            'Positive_sample_size': row.Positive_sample_size_sum,
-            'Positive_rate': row.positive_rate
+            'total_sample_size': row.Total_sample_size_sum,
+            'positive_sample_size': row.Positive_sample_size_sum,
+            'positive_rate': row.positive_rate
         } for row in data
     ]
     return app.response_class(
@@ -291,6 +292,58 @@ def get_biovar_province_stats():
         status=200,
         mimetype='application/json'
     )
+@app.route('/china_zhuzhuangtu', methods=['GET'])
+def get_zhuzhuangtu_data():
+    data = (
+        db.session.query(
+            func.trim(S1Description.Province).label('province'),
+            S1Description.Biovar.label('biovar'),
+            func.sum(S1Description.total_sample_size).label('Total_sample_size_sum'),
+            func.sum(S1Description.positive_sample_size).label('Positive_sample_size_sum'),
+            func.round(func.sum(S1Description.positive_sample_size) / func.sum(S1Description.total_sample_size) * 100, 2).label('positive_rate')
+        )
+        .filter(S1Description.Country == 'China')
+        .filter(S1Description.Province != 'NA')
+        .filter(S1Description.Biovar.in_(['bvSG', 'bvSP']))
+        .group_by(func.trim(S1Description.Province), S1Description.Biovar)
+        .order_by(func.trim(S1Description.Province), S1Description.Biovar)
+        .all()
+    )
+    result = [
+        {
+            'province': row.province,
+            'biovar': row.biovar,
+            'total_sample_size': row.Total_sample_size_sum,
+            'positive_sample_size': row.Positive_sample_size_sum,
+            'positive_rate': row.positive_rate if row.positive_rate else 0
+        } for row in data
+    ]
+
+    province_list = sorted(list(set([item['province'] for item in result])))
+    final_result = {
+        'nameData': [],
+        'bvSGData': [],
+        'bvSPData': [],
+    }
+
+    for province in province_list:
+        bvSGData = 0.0
+        bvSPData = 0.0
+        for item in result:
+            if item['province'] == province:
+                if item['biovar'] == 'bvSG':
+                    bvSGData = item['positive_rate']
+                if item['biovar'] == 'bvSP':
+                    bvSPData = item['positive_rate']
+        final_result['nameData'].append(province)
+        final_result['bvSGData'].append(bvSGData if bvSGData else 0.0)
+        final_result['bvSPData'].append(bvSPData if bvSPData else 0.0)
+    return app.response_class(
+        response=json.dumps(final_result, ensure_ascii=False),
+        status=200,
+        mimetype='application/json'
+    )
+
 ##s2
 @app.route('/S2_query', methods=['GET'])
 def S2_query_data_by_biovar():
