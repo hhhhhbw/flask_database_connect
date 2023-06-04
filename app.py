@@ -343,8 +343,8 @@ def get_biovar_province_stats():
 #         status=200,
 #         mimetype='application/json'
 #     )
-@app.route('/china_zhuzhuangtu', methods=['GET'])
-def get_china_zhuzhuangtu_data():
+@app.route('/china_bvspplusbvsg', methods=['GET'])
+def get_china_bvspplusbvsg_data():
     data = (
         db.session.query(
             func.trim(S1Description.Province).label('province'),
@@ -375,6 +375,44 @@ def get_china_zhuzhuangtu_data():
             result[province]['bvSGData'] = positive_rate
         elif biovar == 'bvSP':
             result[province]['bvSPData'] = positive_rate
+
+    response_data = {'data': list(result.values())}
+    return app.response_class(
+        response=json.dumps(response_data, ensure_ascii=False),
+        status=200,
+        mimetype='application/json'
+    )
+
+@app.route('/world_bvspplusbvsg', methods=['GET'])
+def get_world_bvspplusbvsg_data():
+    data = (
+        db.session.query(
+            S1Description.Country,
+            S1Description.Biovar.label('biovar'),
+            func.sum(S1Description.total_sample_size).label('Total_sample_size_sum'),
+            func.sum(S1Description.positive_sample_size).label('Positive_sample_size_sum'),
+            func.round(func.sum(S1Description.positive_sample_size) / func.sum(S1Description.total_sample_size) * 100, 2).label('positive_rate')
+        )
+        .filter(S1Description.Biovar.in_(['bvSG', 'bvSP']))
+        .group_by(func.trim(S1Description.Country), S1Description.Biovar)
+        .order_by(func.trim(S1Description.Country), S1Description.Biovar)
+        .all()
+    )
+    result = {}
+    for row in data:
+        Country = row.Country
+        biovar = row.biovar
+        positive_rate = row.positive_rate if row.positive_rate else 0.0
+        if Country not in result:
+            result[Country] = {
+                'nameData': Country,
+                'bvSGData': 0.0,
+                'bvSPData': 0.0
+            }
+        if biovar == 'bvSG':
+            result[Country]['bvSGData'] = positive_rate
+        elif biovar == 'bvSP':
+            result[Country]['bvSPData'] = positive_rate
 
     response_data = {'data': list(result.values())}
     return app.response_class(
@@ -564,6 +602,84 @@ def S2_get_biovar_province_stats():
         status=200,
         mimetype='application/json'
     )
+@app.route('/S2_china_bvspplusbvsg', methods=['GET'])
+def get_S2_china_bvspplusbvsg_data():
+    data = (
+        db.session.query(
+            func.trim(S2_meta_analysis.Province).label('province'),
+            S2_meta_analysis.Biovar.label('biovar'),
+            func.sum(S2_meta_analysis.total_sample_size).label('Total_sample_size_sum'),
+            func.sum(S2_meta_analysis.positive_sample_size).label('Positive_sample_size_sum'),
+            func.round(func.sum(S2_meta_analysis.positive_sample_size) / func.sum(S2_meta_analysis.total_sample_size) * 100, 2).label('positive_rate')
+        )
+        .filter(S2_meta_analysis.Country == 'China')
+        .filter(S2_meta_analysis.Province != 'NA')
+        .filter(S2_meta_analysis.Biovar.in_(['bvSG', 'bvSP']))
+        .group_by(func.trim(S2_meta_analysis.Province), S2_meta_analysis.Biovar)
+        .order_by(func.trim(S2_meta_analysis.Province), S2_meta_analysis.Biovar)
+        .all()
+    )
+    result = {}
+    for row in data:
+        province = row.province
+        biovar = row.biovar
+        positive_rate = row.positive_rate if row.positive_rate else 0.0
+        if province not in result:
+            result[province] = {
+                'nameData': province,
+                'bvSGData': 0.0,
+                'bvSPData': 0.0
+            }
+        if biovar == 'bvSG':
+            result[province]['bvSGData'] = positive_rate
+        elif biovar == 'bvSP':
+            result[province]['bvSPData'] = positive_rate
+
+    response_data = {'data': list(result.values())}
+    return app.response_class(
+        response=json.dumps(response_data, ensure_ascii=False),
+        status=200,
+        mimetype='application/json'
+    )
+
+@app.route('/S2_world_bvspplusbvsg', methods=['GET'])
+def get_S2_world_bvspplusbvsg_data():
+    data = (
+        db.session.query(
+            S2_meta_analysis.Country,
+            S2_meta_analysis.Biovar.label('biovar'),
+            func.sum(S2_meta_analysis.total_sample_size).label('Total_sample_size_sum'),
+            func.sum(S2_meta_analysis.positive_sample_size).label('Positive_sample_size_sum'),
+            func.round(func.sum(S2_meta_analysis.positive_sample_size) / func.sum(S2_meta_analysis.total_sample_size) * 100, 2).label('positive_rate')
+        )
+        .filter(S2_meta_analysis.Biovar.in_(['bvSG', 'bvSP']))
+        .group_by(func.trim(S2_meta_analysis.Country), S2_meta_analysis.Biovar)
+        .order_by(func.trim(S2_meta_analysis.Country), S2_meta_analysis.Biovar)
+        .all()
+    )
+    result = {}
+    for row in data:
+        Country = row.Country
+        biovar = row.biovar
+        positive_rate = row.positive_rate if row.positive_rate else 0.0
+        if Country not in result:
+            result[Country] = {
+                'nameData': Country,
+                'bvSGData': 0.0,
+                'bvSPData': 0.0
+            }
+        if biovar == 'bvSG':
+            result[Country]['bvSGData'] = positive_rate
+        elif biovar == 'bvSP':
+            result[Country]['bvSPData'] = positive_rate
+
+    response_data = {'data': list(result.values())}
+    return app.response_class(
+        response=json.dumps(response_data, ensure_ascii=False),
+        status=200,
+        mimetype='application/json'
+    )
+
 ##S3
 @app.route('/S3_description', methods=['GET'])
 def S3_get_description_data():
@@ -680,6 +796,7 @@ def S3_get_biovar_province_stats():
         for row in data
     ]
     return jsonify(result)
+
 ##S4_farm_mode
 @app.route('/S4_description', methods=['GET'])
 def S4_get_description_data():
@@ -796,6 +913,8 @@ def S4_get_biovar_province_stats():
         for row in data
     ]
     return jsonify(result)
+
+
 ##S5
 @app.route('/S5_description', methods=['GET'])
 def S5_get_description_data():
