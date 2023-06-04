@@ -1155,7 +1155,6 @@ def S6_get_biovar_province_stats():
         for row in data
     ]
     return jsonify(result)
-
 # 主程序入口
 if __name__ == '__main__':
     # 使用应用上下文，确保正确执行查询
