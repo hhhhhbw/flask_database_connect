@@ -686,7 +686,6 @@ def S3_get_description_data():
     data = (
         db.session.query(
             func.trim(S3_chick_breed.Country).label('country'),
-            S3_chick_breed.Breed,
             func.sum(S3_chick_breed.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S3_chick_breed.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S3_chick_breed.positive_sample_size) / func.sum(S3_chick_breed.total_sample_size) * 100, 2).label('positive_rate')
@@ -701,7 +700,6 @@ def S3_get_description_data():
     result = [
         {
             'name': row.country,
-            'Breed': row.Breed,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -713,21 +711,19 @@ def S3_get_description_province_data():
     data = (
         db.session.query(
             func.trim(S3_chick_breed.Province).label('province'),
-            S3_chick_breed.Breed,
             func.sum(S3_chick_breed.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S3_chick_breed.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S3_chick_breed.positive_sample_size) / func.sum(S3_chick_breed.total_sample_size) * 100, 2).label('positive_rate')
         )
         .filter(S3_chick_breed.Country == 'China')
         .filter(S3_chick_breed.Province != 'NA')
-        .group_by(func.trim(S3_chick_breed.Province), S3_chick_breed.Breed)
+        .group_by(func.trim(S3_chick_breed.Province))
         .order_by(func.trim(S3_chick_breed.Province))
         .all()
     )
     result = [
         {
             'name': row.province,
-            'Breed': row.Breed,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -747,18 +743,16 @@ def S3_get_biovar_country_stats():
     data = (
         db.session.query(
             S3_chick_breed.Country,
-            S3_chick_breed.Breed,
             func.sum(S3_chick_breed.total_sample_size).label("total_sample_size"),
             func.sum(S3_chick_breed.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S3_chick_breed.Biovar == biovar)
-        .group_by(S3_chick_breed.Country, S3_chick_breed.Breed)
+        .group_by(S3_chick_breed.Country)
         .all()
     )
     result = [
         {
             "name": row.Country,
-            "Breed": row.Breed,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
@@ -775,20 +769,18 @@ def S3_get_biovar_province_stats():
     data = (
         db.session.query(
             S3_chick_breed.Province,
-            S3_chick_breed.Breed,
             func.sum(S3_chick_breed.total_sample_size).label("total_sample_size"),
             func.sum(S3_chick_breed.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S3_chick_breed.Biovar == biovar)
         .filter(S3_chick_breed.Country == 'China')
         .filter(S3_chick_breed.Province != 'NA')
-        .group_by(S3_chick_breed.Province, S3_chick_breed.Breed)
+        .group_by(S3_chick_breed.Province)
         .all()
     )
     result = [
         {
             "name": row.Province,
-            "Breed": row.Breed,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
@@ -803,7 +795,6 @@ def S4_get_description_data():
     data = (
         db.session.query(
             func.trim(S4_farm_mode.Country).label('country'),
-            S4_farm_mode.Raising_mode,
             func.sum(S4_farm_mode.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S4_farm_mode.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S4_farm_mode.positive_sample_size) / func.sum(S4_farm_mode.total_sample_size) * 100, 2).label('positive_rate')
@@ -818,7 +809,6 @@ def S4_get_description_data():
     result = [
         {
             'name': row.country,
-            'Raising_mode': row.Raising_mode,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -830,21 +820,19 @@ def S4_get_description_province_data():
     data = (
         db.session.query(
             func.trim(S4_farm_mode.Province).label('province'),
-            S4_farm_mode.Raising_mode,
             func.sum(S4_farm_mode.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S4_farm_mode.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S4_farm_mode.positive_sample_size) / func.sum(S4_farm_mode.total_sample_size) * 100, 2).label('positive_rate')
         )
         .filter(S4_farm_mode.Country == 'China')
         .filter(S4_farm_mode.Province != 'NA')
-        .group_by(func.trim(S4_farm_mode.Province), S4_farm_mode.Raising_mode)
+        .group_by(func.trim(S4_farm_mode.Province))
         .order_by(func.trim(S4_farm_mode.Province))
         .all()
     )
     result = [
         {
             'name': row.province,
-            'Raising_mode': row.Raising_mode,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -864,18 +852,16 @@ def S4_get_biovar_country_stats():
     data = (
         db.session.query(
             S4_farm_mode.Country,
-            S4_farm_mode.Raising_mode,
             func.sum(S4_farm_mode.total_sample_size).label("total_sample_size"),
             func.sum(S4_farm_mode.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S4_farm_mode.Biovar == biovar)
-        .group_by(S4_farm_mode.Country, S4_farm_mode.Raising_mode)
+        .group_by(S4_farm_mode.Country)
         .all()
     )
     result = [
         {
             "name": row.Country,
-            "Raising_mode": row.Raising_mode,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
@@ -892,20 +878,18 @@ def S4_get_biovar_province_stats():
     data = (
         db.session.query(
             S4_farm_mode.Province,
-            S4_farm_mode.Raising_mode,
             func.sum(S4_farm_mode.total_sample_size).label("total_sample_size"),
             func.sum(S4_farm_mode.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S4_farm_mode.Biovar == biovar)
         .filter(S4_farm_mode.Country == 'China')
         .filter(S4_farm_mode.Province != 'NA')
-        .group_by(S4_farm_mode.Province, S4_farm_mode.Raising_mode)
+        .group_by(S4_farm_mode.Province,)
         .all()
     )
     result = [
         {
             "name": row.Province,
-            "Raising_mode": row.Raising_mode,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
@@ -921,8 +905,6 @@ def S5_get_description_data():
     data = (
         db.session.query(
             func.trim(S5_chick_economic_usage.Country).label('country'),
-            S5_chick_economic_usage.Economic_use,
-            S5_chick_economic_usage.Growth_stage,
             func.sum(S5_chick_economic_usage.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S5_chick_economic_usage.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S5_chick_economic_usage.positive_sample_size) / func.sum(S5_chick_economic_usage.total_sample_size) * 100, 2).label('positive_rate')
@@ -937,8 +919,6 @@ def S5_get_description_data():
     result = [
         {
             'name': row.country,
-            'Economic_use': row.Economic_use,
-            'Growth_stage': row.Growth_stage,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -950,23 +930,19 @@ def S5_get_description_province_data():
     data = (
         db.session.query(
             func.trim(S5_chick_economic_usage.Province).label('province'),
-            S5_chick_economic_usage.Economic_use,
-            S5_chick_economic_usage.Growth_stage,
             func.sum(S5_chick_economic_usage.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S5_chick_economic_usage.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S5_chick_economic_usage.positive_sample_size) / func.sum(S5_chick_economic_usage.total_sample_size) * 100, 2).label('positive_rate')
         )
         .filter(S5_chick_economic_usage.Country == 'China')
         .filter(S5_chick_economic_usage.Province != 'NA')
-        .group_by(func.trim(S5_chick_economic_usage.Province), S5_chick_economic_usage.Economic_use, S5_chick_economic_usage.Growth_stage)
+        .group_by(func.trim(S5_chick_economic_usage.Province), )
         .order_by(func.trim(S5_chick_economic_usage.Province))
         .all()
     )
     result = [
         {
             'name': row.province,
-            'Economic_use': row.Economic_use,
-            'Growth_stage': row.Growth_stage,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -986,20 +962,16 @@ def S5_get_biovar_country_stats():
     data = (
         db.session.query(
             S5_chick_economic_usage.Country,
-            S5_chick_economic_usage.Economic_use,
-            S5_chick_economic_usage.Growth_stage,
             func.sum(S5_chick_economic_usage.total_sample_size).label("total_sample_size"),
             func.sum(S5_chick_economic_usage.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S5_chick_economic_usage.Biovar == biovar)
-        .group_by(S5_chick_economic_usage.Country, S5_chick_economic_usage.Economic_use, S5_chick_economic_usage.Growth_stage)
+        .group_by(S5_chick_economic_usage.Country,)
         .all()
     )
     result = [
         {
             "name": row.Country,
-            "Economic_use": row.Economic_use,
-            "Growth_stage": row.Growth_stage,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
@@ -1015,22 +987,18 @@ def S5_get_biovar_province_stats():
     data = (
         db.session.query(
             S5_chick_economic_usage.Province,
-            S5_chick_economic_usage.Economic_use,
-            S5_chick_economic_usage.Growth_stage,
             func.sum(S5_chick_economic_usage.total_sample_size).label("total_sample_size"),
             func.sum(S5_chick_economic_usage.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S5_chick_economic_usage.Biovar == biovar)
         .filter(S5_chick_economic_usage.Country == 'China')
         .filter(S5_chick_economic_usage.Province != 'NA')
-        .group_by(S5_chick_economic_usage.Province, S5_chick_economic_usage.Economic_use, S5_chick_economic_usage.Growth_stage)
+        .group_by(S5_chick_economic_usage.Province,)
         .all()
     )
     result = [
         {
             "name": row.Province,
-            "Economic_use": row.Economic_use,
-            "Growth_stage": row.Growth_stage,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
@@ -1044,19 +1012,17 @@ def S6_get_description_country_data():
     data = (
         db.session.query(
             func.trim(S6_chick_sex.Country).label('country'),
-            func.trim(S6_chick_sex.Gender).label('gender'),
             func.sum(S6_chick_sex.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S6_chick_sex.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S6_chick_sex.positive_sample_size) / func.sum(S6_chick_sex.total_sample_size) * 100, 2).label('positive_rate')
         )
-        .group_by(func.trim(S6_chick_sex.Country), func.trim(S6_chick_sex.Gender))
+        .group_by(func.trim(S6_chick_sex.Country), )
         .order_by(func.trim(S6_chick_sex.Country), func.trim(S6_chick_sex.Gender))
         .all()
     )
     result = [
         {
             'name': row.country,
-            'Gender': row.gender,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -1072,21 +1038,19 @@ def S6_get_description_province_data():
     data = (
         db.session.query(
             func.trim(S6_chick_sex.Province).label('province'),
-            func.trim(S6_chick_sex.Gender).label('gender'),
             func.sum(S6_chick_sex.total_sample_size).label('Total_sample_size_sum'),
             func.sum(S6_chick_sex.positive_sample_size).label('Positive_sample_size_sum'),
             func.round(func.sum(S6_chick_sex.positive_sample_size) / func.sum(S6_chick_sex.total_sample_size) * 100, 2).label('positive_rate')
         )
         .filter(S6_chick_sex.Country == 'China')
         .filter(S6_chick_sex.Province != 'NA')
-        .group_by(func.trim(S6_chick_sex.Province), func.trim(S6_chick_sex.Gender))
+        .group_by(func.trim(S6_chick_sex.Province))
         .order_by(func.trim(S6_chick_sex.Province))
         .all()
     )
     result = [
         {
             'name': row.province,
-            'Gender': row.gender,
             'Total_sample_size': row.Total_sample_size_sum,
             'Positive_sample_size': row.Positive_sample_size_sum,
             'Positive_rate': row.positive_rate
@@ -1106,18 +1070,16 @@ def S6_get_biovar_country_stats():
     data = (
         db.session.query(
             S6_chick_sex.Country,
-            S6_chick_sex.Gender,
             func.sum(S6_chick_sex.total_sample_size).label("total_sample_size"),
             func.sum(S6_chick_sex.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S6_chick_sex.Biovar == biovar)
-        .group_by(S6_chick_sex.Country, S6_chick_sex.Gender)
+        .group_by(S6_chick_sex.Country, )
         .all()
     )
     result = [
         {
             "name": row.Country,
-            "Gender": row.Gender,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
@@ -1134,20 +1096,18 @@ def S6_get_biovar_province_stats():
     data = (
         db.session.query(
             S6_chick_sex.Province,
-            S6_chick_sex.Gender,
             func.sum(S6_chick_sex.total_sample_size).label("total_sample_size"),
             func.sum(S6_chick_sex.positive_sample_size).label("positive_sample_size"),
         )
         .filter(S6_chick_sex.Biovar == biovar)
         .filter(S6_chick_sex.Country == 'China')
         .filter(S6_chick_sex.Province != 'NA')
-        .group_by(S6_chick_sex.Province, S6_chick_sex.Gender)
+        .group_by(S6_chick_sex.Province,)
         .all()
     )
     result = [
         {
             "name": row.Province,
-            "Gender": row.Gender,
             "total_sample_size": row.total_sample_size,
             "positive_sample_size": row.positive_sample_size,
             "positive_rate": round(row.positive_sample_size / row.total_sample_size * 100, 2),
